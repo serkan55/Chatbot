@@ -84,7 +84,6 @@ def tokenize(text: str) -> None:
     return processed_sentences
 
 def get_tokenized_words(sentence: str) -> list:
-    
     # Remove punctuation from sentence
     sentence = sentence.translate(str.maketrans('', '', string.punctuation))
 
@@ -105,13 +104,6 @@ def root_of(words: list, language: str = 'english') -> list:
     
     # Remove stopwords and stem
     filtered_words = [port_stemmer.stem(word.lower()) for word in words if word.lower() not in stop_words]
-    
-    # filtered_words = []
-    # for word in words:
-    #     if word.lower() not in stop_words:
-    #         stemm = port_stemmer.stem(word.lower()) 
-    #         filtered_words.append(stemm)
-    
     return filtered_words
 
 #     # Perform stemming
@@ -135,18 +127,21 @@ def root_of(words: list, language: str = 'english') -> list:
     
 
 ### Bag of Words ###
-def bag_of_words(text: str, vocabulary: list) -> list:
+def bag_of_sentences(text: str, vocabulary: list) -> list:
     bags: list = []
-    bag = np.zeros(len(vocabulary), dtype=np.float32)
     sentences = tokenize(text)
 
     for sentence in sentences:
-        for index, word in enumerate(vocabulary):
-            bag[index] = int(word in root_of(sentence))
-        if len(sentences) == 1:
-            return bag.tolist()
-        bags.append(bag.tolist())
+        bags.append(bag_of_words(sentence))
     return bags
+
+def bag_of_words(sentence: str, vocabulary: list) -> list:
+    bag = np.zeros(len(vocabulary), dtype=np.float32)
+    words = get_tokenized_words(sentence)
+
+    for index, word in enumerate(vocabulary):
+        bag[index] = int(word in root_of(words))
+    return bag.tolist()
 
 # root_of(satz, language='german')
 
@@ -156,11 +151,15 @@ def bag_of_words(text: str, vocabulary: list) -> list:
 
 print('### Create Vocabulary ###')
 ### Create Vocabulary ###
-vocabulary: list = []
+def get_vocabulary(list_of_data:list) -> list:
+    vocabulary: list = []
+    for sentence in list_of_data:
+        sentence = get_tokenized_words(sentence)
+        vocabulary.extend(root_of(sentence))
+    return vocabulary
+
 patterns = data.patterns.values.tolist()
-for sentence in patterns:
-    sentence = get_tokenized_words(sentence)
-    vocabulary.extend(root_of(sentence))
+vocabulary = get_vocabulary(patterns)
 bow_patterns = [bag_of_words(pattern, vocabulary) for pattern in patterns]
 
 print('### Aufbau eines Entscheidungsbaummodells ###')
@@ -175,25 +174,14 @@ responses = list(zip(labels, data.responses.values.tolist()))
 print('### Starts ###')
 while True:
     message = input('Message: ')
-    
     bow_message = [bag_of_words(message, vocabulary)]
-    # print(vocabulary)
-    # print('~~~~~~~~~~~~~~~~')
 
     # Predict the response for test dataset
     # find out over bow which category/tag the message belongs to
     prediction = decision_tree_classifier.predict(bow_message)
-    # print(prediction)
-    # print('++++++++++++++++')
 
     response_options = [tupel[1] for tupel in responses if tupel[0]==prediction]
-    # print(response_options)
     print(random.choice(response_options))
-    
-    # result = None
-    # for tag, pattern, response in responses:
-    #     result = bag_of_words(message, get_tokenized_words(pattern))
-    #     if 1 in result[0]:
-    #         print(f'{result} - {pattern} - {response}')
-    
-    
+
+
+
