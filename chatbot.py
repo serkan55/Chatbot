@@ -8,12 +8,15 @@ Created on Thu Jul 17 12:56:21 2025
 
 import sys
 import os
+
+from sklearn.model_selection import train_test_split
 # Add the parent directory to PYTHONPATH so custom_sklearn can be imported
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
 import pandas as pd
 import string
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
 
 
@@ -129,3 +132,24 @@ class Chatbot:
             sentence = self.get_tokenized_words(sentence)
             vocabulary.extend(self.root_of(sentence))
         return vocabulary
+
+    def accuracy_score_with_countvector(self, patterns: list, labels: LabelEncoder) -> tuple:
+        print('### CounterVector ###')
+        count_vec = CountVectorizer()
+        word_counts = count_vec.fit_transform(patterns)
+        bag_of_words_df = pd.DataFrame(word_counts.toarray(), columns = count_vec.get_feature_names_out())
+
+        train_data, test_data, train_y, test_y = train_test_split(bag_of_words_df, labels, test_size=0.2, random_state=42)
+        
+        return train_data, test_data, train_y, test_y
+
+    def accuracy_score_with_tfidfvector(self, patterns: list, labels: LabelEncoder) -> tuple:
+        print('### TfidfVectorizer ###')
+        X_train, X_test, y_train, y_test = train_test_split(patterns, labels, test_size=0.2, random_state=42)
+        
+        # Textdaten vektorisieren
+        vectorizer = TfidfVectorizer()
+        X_train_vec  = vectorizer.fit_transform(X_train)
+        X_test_vec = vectorizer.transform(X_test)
+        
+        return X_train_vec, X_test_vec, y_train, y_test
